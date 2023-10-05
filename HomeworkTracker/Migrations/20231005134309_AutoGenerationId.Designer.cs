@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HomeworkTrackerApi.Migrations
 {
     [DbContext(typeof(ApiContext))]
-    [Migration("20231005095355_addedAnswerAttachments1")]
-    partial class addedAnswerAttachments1
+    [Migration("20231005134309_AutoGenerationId")]
+    partial class AutoGenerationId
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

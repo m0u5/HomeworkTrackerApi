@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace HomeworkTrackerApi.Migrations
 {
     /// <inheritdoc />
-    public partial class CreatedModels : Migration
+    public partial class PleaseWork : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -50,23 +50,38 @@ namespace HomeworkTrackerApi.Migrations
                 name: "Attachement",
                 columns: table => new
                 {
-                    id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ExerciseId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AnswerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    Path = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ExerciseId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Attachement", x => x.id);
-                    table.ForeignKey(
-                        name: "FK_Attachement_Answer_AnswerId",
-                        column: x => x.AnswerId,
-                        principalTable: "Answer",
-                        principalColumn: "Id");
+                    table.PrimaryKey("PK_Attachement", x => x.Id);
                     table.ForeignKey(
                         name: "FK_Attachement_Exercise_ExerciseId",
                         column: x => x.ExerciseId,
                         principalTable: "Exercise",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AnswerAttachments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Path = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AnswerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AnswerAttachments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AnswerAttachments_Answer_AnswerId",
+                        column: x => x.AnswerId,
+                        principalTable: "Answer",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -77,8 +92,8 @@ namespace HomeworkTrackerApi.Migrations
                 column: "ExerciseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Attachement_AnswerId",
-                table: "Attachement",
+                name: "IX_AnswerAttachments_AnswerId",
+                table: "AnswerAttachments",
                 column: "AnswerId");
 
             migrationBuilder.CreateIndex(
@@ -90,6 +105,9 @@ namespace HomeworkTrackerApi.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AnswerAttachments");
+
             migrationBuilder.DropTable(
                 name: "Attachement");
 
