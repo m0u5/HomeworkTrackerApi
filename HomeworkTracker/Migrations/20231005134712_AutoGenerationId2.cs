@@ -5,7 +5,7 @@
 namespace HomeworkTrackerApi.Migrations
 {
     /// <inheritdoc />
-    public partial class addedAnswerAttachments1 : Migration
+    public partial class AutoGenerationId2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

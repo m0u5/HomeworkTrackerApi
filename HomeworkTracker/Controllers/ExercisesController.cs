@@ -88,12 +88,23 @@ namespace HomeworkTrackerApi.Controllers
         // POST: api/Exercises
         
         [HttpPost]
-        public async Task<ActionResult<Exercise>> PostExercise(Exercise exercise)
+        public async Task<ActionResult<Exercise>> PostExercise([FromForm]ExerciseDTO exerciseDTO )
         {
-          if (_context.Exercise == null)
-          {
+            Exercise exercise = new Exercise
+            {
+                Id = new Guid(),
+                Name = exerciseDTO.Name,
+                Description = exerciseDTO.Description,
+                DeadLine = exerciseDTO.DeadLine,
+                StudentLogin = exerciseDTO.StudentLogin,
+                IsCompleted = exerciseDTO.IsCompleted,
+                
+            };
+
+            if (_context.Exercise == null)
+            {
               return Problem("Entity set 'ApiContext.Exercise'  is null.");
-          }
+            }
             _context.Exercise.Add(exercise);
             await _context.SaveChangesAsync();
 
@@ -140,7 +151,7 @@ namespace HomeworkTrackerApi.Controllers
 
 
         [HttpPost("{id}/attachements")]
-        public async Task<ActionResult<Attachement>> PostAttachment(Guid id, IFormFile file)
+        public async Task<ActionResult<IEnumerable<Attachement>>> PostAttachment(Guid id, List<IFormFile> files)
         {
             var exercise = await _context.Exercise.FindAsync(id);
             if (exercise == null)
@@ -155,58 +166,74 @@ namespace HomeworkTrackerApi.Controllers
                 Directory.CreateDirectory(folderPath);
             }
 
-            if (file.Length > 0)
+            var attachments = new List<Attachement>();
+            foreach (var file in files)
             {
-                var fileName = file.FileName;
-                var fullFilePath = Path.Combine(folderPath, fileName);
-
-                // Проверка существования файла и добавление индекса
-                int count = 1;
-                while (System.IO.File.Exists(fullFilePath))
+                if (file.Length > 0)
                 {
-                    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-                    var extension = Path.GetExtension(fileName);
+                    var fileName = file.FileName;
+                    var fullFilePath = Path.Combine(folderPath, fileName);
 
-                    // Обновление fileNameWithoutExtension, удаляем предыдущий индекс
-                    var regex = new Regex(@"\(\d+\)$");
-                    fileNameWithoutExtension = regex.Replace(fileNameWithoutExtension, string.Empty);
+                    // Проверка существования файла и добавление индекса
+                    int count = 1;
+                    while (System.IO.File.Exists(fullFilePath))
+                    {
+                        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+                        var extension = Path.GetExtension(fileName);
 
-                    fileName = $"{fileNameWithoutExtension}({count++}){extension}";
-                    fullFilePath = Path.Combine(folderPath, fileName);
+                        // Обновление fileNameWithoutExtension, удаляем предыдущий индекс
+                        var regex = new Regex(@"\(\d+\)$");
+                        fileNameWithoutExtension = regex.Replace(fileNameWithoutExtension, string.Empty);
+
+                        fileName = $"{fileNameWithoutExtension}({count++}){extension}";
+                        fullFilePath = Path.Combine(folderPath, fileName);
+                    }
+
+                    using var stream = new FileStream(fullFilePath, FileMode.Create);
+                    await file.CopyToAsync(stream);
+
+                    var attachment = new Attachement
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = fileName,
+                        Path = fullFilePath,
+                        Exercise = exercise,
+                    };
+
+                    attachments.Add(attachment);
+                    _context.Attachement.Add(attachment);
                 }
-
-                using var stream = new FileStream(fullFilePath, FileMode.Create);
-                await file.CopyToAsync(stream);
-
-                var attachment = new Attachement
-                {
-                    Id = Guid.NewGuid(),
-                    Name = fileName,
-                    Path = fullFilePath,
-                    Exercise = exercise,
-                };
-
-                _context.Attachement.Add(attachment);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction("GetAttachment",
-                    new { id = exercise.Id, fileId = attachment.Id }, attachment);
             }
 
-            return BadRequest();
+            await _context.SaveChangesAsync();
+
+            //return CreatedAtAction("GetAttachment", new { id = exercise.Id }); хуй знает в чем бага надо фиксить но почему-то кидает 500
+            return Ok();
+
         }
 
-        [HttpGet("{id}/attachement/{fileId}")]
-        public async Task<ActionResult<Attachement>> GetAttachment(Guid id, Guid fileId)//А в каком виде его на фронту то возвращать?
+
+
+
+
+
+        //GET: api/ExerciseId/attachement
+        [HttpGet("{id}/attachments")]
+        public async Task<ActionResult<IEnumerable<Attachement>>> GetAttachment(Guid id)//А в каком виде его на фронту то возвращать?
         {
-            var attachment = await _context.Attachement.FindAsync(fileId);
-
-            if (attachment == null)
+            var exercise = await _context.Exercise.Include(e => e.Attachements).FirstOrDefaultAsync(e => e.Id == id);
+            if(exercise != null)
             {
-                return NotFound();
-            }
+                var attachment = exercise.Attachements;
 
-            return attachment;
+                if (attachment == null)
+                {
+                    return NotFound();
+                }
+
+                return attachment;
+            }
+            else { return NotFound(); }
         }
 
 

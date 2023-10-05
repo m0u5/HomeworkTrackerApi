@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HomeworkTrackerApi.Migrations
 {
     [DbContext(typeof(ApiContext))]
-    [Migration("20230804134605_CreatedModels")]
-    partial class CreatedModels
+    [Migration("20231005133712_PleaseWork")]
+    partial class PleaseWork
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -74,13 +74,34 @@ namespace HomeworkTrackerApi.Migrations
                     b.ToTable("Answer");
                 });
 
-            modelBuilder.Entity("HomeworkTrackerApi.Models.Attachement", b =>
+            modelBuilder.Entity("HomeworkTrackerApi.Models.AnswerAttachment", b =>
                 {
-                    b.Property<Guid>("id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AnswerId")
+                    b.Property<Guid>("AnswerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnswerId");
+
+                    b.ToTable("AnswerAttachments");
+                });
+
+            modelBuilder.Entity("HomeworkTrackerApi.Models.Attachement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("ExerciseId")
@@ -90,9 +111,11 @@ namespace HomeworkTrackerApi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("id");
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("AnswerId");
+                    b.HasKey("Id");
 
                     b.HasIndex("ExerciseId");
 
@@ -110,12 +133,19 @@ namespace HomeworkTrackerApi.Migrations
                     b.Navigation("Exercise");
                 });
 
+            modelBuilder.Entity("HomeworkTrackerApi.Models.AnswerAttachment", b =>
+                {
+                    b.HasOne("HomeworkTrackerApi.Models.Answer", "Answer")
+                        .WithMany("Attachements")
+                        .HasForeignKey("AnswerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Answer");
+                });
+
             modelBuilder.Entity("HomeworkTrackerApi.Models.Attachement", b =>
                 {
-                    b.HasOne("HomeworkTrackerApi.Models.Answer", null)
-                        .WithMany("Attachements")
-                        .HasForeignKey("AnswerId");
-
                     b.HasOne("HomeworkTracker.Models.Exercise", "Exercise")
                         .WithMany("Attachements")
                         .HasForeignKey("ExerciseId")

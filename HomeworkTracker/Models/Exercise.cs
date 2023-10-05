@@ -1,12 +1,14 @@
 ﻿using HomeworkTrackerApi.Models;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HomeworkTracker.Models
 {
     public class Exercise
     {
         [Key]
-        public Guid Id { get; set; }
+        
+        public Guid Id { get; set; } 
         [Required]
         public string Name { get; set; }
         [Required]
