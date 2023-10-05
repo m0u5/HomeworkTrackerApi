@@ -9,7 +9,7 @@ namespace HomeworkTrackerApi.Models
         public Guid Id { get; set; }
 
         public string? TextAnswer { get; set; }
-        public List<Attachement> Attachements { get; set; }//возможно в этом нет необходимости
+        public List<AnswerAttachment>? Attachements { get; set; }//возможно в этом нет необходимости
         public Exercise Exercise { get; set; }
     }
 }

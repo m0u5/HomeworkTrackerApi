@@ -6,6 +6,7 @@ namespace HomeworkTrackerApi.Data
 {
     public class ApiContext:DbContext
     {
+        public DbSet<AnswerAttachment> AnswerAttachments { get; set; }
         public DbSet<Exercise> Exercise { get; set; }
         public DbSet<Answer> Answer { get; set; }
         public DbSet<Attachement> Attachement { get; set;}

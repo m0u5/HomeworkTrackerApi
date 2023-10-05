@@ -27,7 +27,7 @@ namespace HomeworkTrackerApi.Controllers
 
         // GET: api/Exercises
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Exercise>>> GetExercise()
+        public async Task<ActionResult<IEnumerable<Exercise>>> GetExercises()
         {
           if (_context.Exercise == null)
           {
@@ -197,7 +197,7 @@ namespace HomeworkTrackerApi.Controllers
         }
 
         [HttpGet("{id}/attachement/{fileId}")]
-        public async Task<ActionResult<Attachement>> GetAttachment(Guid id, Guid fileId)
+        public async Task<ActionResult<Attachement>> GetAttachment(Guid id, Guid fileId)//А в каком виде его на фронту то возвращать?
         {
             var attachment = await _context.Attachement.FindAsync(fileId);
 

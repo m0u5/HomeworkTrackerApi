@@ -15,8 +15,7 @@ namespace HomeworkTracker.Models
         public DateTime? DeadLine { get; set; }
         [Required]
         public string StudentLogin { get; set; }
-        //public string? Image { get; set; }
-        //public string? Attachement { get; set; }
+        
         public bool IsCompleted { get; set; }
 
         //ссылка на ответы
