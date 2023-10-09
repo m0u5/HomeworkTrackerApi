@@ -29,7 +29,7 @@ namespace HomeworkTrackerApi.Controllers
             {
                 return NotFound();
             }
-            return await _context.Answer.Include(a => a.Exercise).Include(a=>a.Attachements).ToListAsync();
+            return await _context.Answer.Include(a => a.Exercise).Include(a=>a.Attachments).ToListAsync();
         }
 
         //GET: api/Answers/5
@@ -40,7 +40,7 @@ namespace HomeworkTrackerApi.Controllers
             {
                 return NotFound();
             }
-            var answer = await _context.Answer.Include(a => a.Exercise).Include(a => a.Attachements).FirstOrDefaultAsync(a=>a.Id == id);
+            var answer = await _context.Answer.Include(a => a.Exercise).Include(a => a.Attachments).FirstOrDefaultAsync(a=>a.Id == id);
             if(answer == null)
             {
                 return NotFound(answer);
@@ -136,7 +136,7 @@ namespace HomeworkTrackerApi.Controllers
                 }
             }
 
-            if (answer.Attachements != null || answer.TextAnswer != null)
+            if (answer.Attachments != null || answer.TextAnswer != null)
             {
                 _context.Answer.Add(answer);
                 await _context.SaveChangesAsync();
@@ -155,16 +155,16 @@ namespace HomeworkTrackerApi.Controllers
                 return NotFound();
             }
 
-            var answer = await _context.Answer.Include(a => a.Attachements).FirstOrDefaultAsync(a => a.Id == id);
+            var answer = await _context.Answer.Include(a => a.Attachments).FirstOrDefaultAsync(a => a.Id == id);
 
             if(answer == null)
             {
                 return NotFound();
             }
 
-            if(answer.Attachements !=null)
+            if(answer.Attachments !=null)
             {
-                foreach(var attachment in  answer.Attachements)
+                foreach(var attachment in  answer.Attachments)
                 {
                     System.IO.File.Delete(attachment.Path);
                     _context.AnswerAttachments.Remove(attachment);
