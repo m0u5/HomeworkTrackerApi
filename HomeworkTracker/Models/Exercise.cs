@@ -24,6 +24,6 @@ namespace HomeworkTracker.Models
         public List<Answer>? Answers { get; set; }
 
         //Ссылка на прикрепленные файлы
-        public List<Attachement>? Attachements { get; set;}
+        public List<ExerciseAttachment>? Attachments { get; set;}
     }
 }

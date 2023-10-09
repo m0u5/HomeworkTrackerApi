@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HomeworkTracker.Models;
 using HomeworkTrackerApi.Data;
 using HomeworkTrackerApi.Models;
-using System.Net.Mail;
 using System.Text.RegularExpressions;
 
 namespace HomeworkTrackerApi.Controllers
@@ -33,7 +27,7 @@ namespace HomeworkTrackerApi.Controllers
           {
               return NotFound();
           }
-            return await _context.Exercise.Include(e => e.Attachements).ToListAsync();
+            return await _context.Exercise.Include(e => e.Attachments).ToListAsync();
         }
 
         // GET: api/Exercises/5
@@ -44,7 +38,7 @@ namespace HomeworkTrackerApi.Controllers
           {
               return NotFound();
           }
-            var exercise = await _context.Exercise.Include(e => e.Attachements).FirstOrDefaultAsync(e => e.Id == id);
+            var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
 
             if (exercise == null)
             {
@@ -124,18 +118,18 @@ namespace HomeworkTrackerApi.Controllers
                 return NotFound();
             }
 
-            var exercise = await _context.Exercise.Include(e=>e.Attachements).FirstOrDefaultAsync(e => e.Id == id);//ЕСЛИ ЧТО метод FindAsync не поддерживает операцию Include
+            var exercise = await _context.Exercise.Include(e=>e.Attachments).FirstOrDefaultAsync(e => e.Id == id);//ЕСЛИ ЧТО метод FindAsync не поддерживает операцию Include
 
             if (exercise == null)
             {
                 return NotFound();
             }
 
-            if(exercise.Attachements != null)
-            foreach(var attachement in exercise.Attachements)
+            if(exercise.Attachments != null)
+            foreach(var attachement in exercise.Attachments)
             {
                 System.IO.File.Delete(attachement.Path);//удаление файлов из папки серва
-                _context.Attachement.Remove(attachement);
+                _context.Attachments.Remove(attachement);
             }
 
             _context.Exercise.Remove(exercise);
@@ -151,7 +145,8 @@ namespace HomeworkTrackerApi.Controllers
 
 
         [HttpPost("{id}/attachements")]
-        public async Task<ActionResult<IEnumerable<Attachement>>> PostAttachment(Guid id, List<IFormFile> files)
+        public async Task<ActionResult<IEnumerable<ExerciseAttachment>>> PostAttachment(Guid id, List<IFormFile> files)//ЗДЕСЬ ВОЗМОЖНО СТОИТ ЗАМЕНИТЬ EA НА EADTO
+                                                                                                                       //ЧТОБЫ CREATEDATACTION НОРМАЛЬНО РАБОТАЛ   
         {
             var exercise = await _context.Exercise.FindAsync(id);
             if (exercise == null)
@@ -166,7 +161,7 @@ namespace HomeworkTrackerApi.Controllers
                 Directory.CreateDirectory(folderPath);
             }
 
-            var attachments = new List<Attachement>();
+            var attachments = new List<ExerciseAttachment>();
             foreach (var file in files)
             {
                 if (file.Length > 0)
@@ -192,7 +187,7 @@ namespace HomeworkTrackerApi.Controllers
                     using var stream = new FileStream(fullFilePath, FileMode.Create);
                     await file.CopyToAsync(stream);
 
-                    var attachment = new Attachement
+                    var attachment = new ExerciseAttachment
                     {
                         Id = Guid.NewGuid(),
                         Name = fileName,
@@ -201,14 +196,14 @@ namespace HomeworkTrackerApi.Controllers
                     };
 
                     attachments.Add(attachment);
-                    _context.Attachement.Add(attachment);
+                    _context.Attachments.Add(attachment);
                 }
             }
 
             await _context.SaveChangesAsync();
 
-            //return CreatedAtAction("GetAttachment", new { id = exercise.Id }); хуй знает в чем бага надо фиксить но почему-то кидает 500
-            return Ok();
+            return CreatedAtAction("GetAttachment", new { id = exercise.Id }, attachments); 
+            //return Ok();
 
         }
 
@@ -219,19 +214,23 @@ namespace HomeworkTrackerApi.Controllers
 
         //GET: api/ExerciseId/attachement
         [HttpGet("{id}/attachments")]
-        public async Task<ActionResult<IEnumerable<Attachement>>> GetAttachment(Guid id)//А в каком виде его на фронту то возвращать?
-        {
-            var exercise = await _context.Exercise.Include(e => e.Attachements).FirstOrDefaultAsync(e => e.Id == id);
+        public async Task<ActionResult<IEnumerable<AttachmentDTO>>> GetAttachment(Guid id)//А в каком виде его на фронту то возвращать? 
+            {                                                                                         //UPD ТЕПЕРЬ ВОЗВРАЩАЕТСЯ DTO ВМЕСТО ПОЛНОЙ МОДЕЛИ                                                                                                  
+            var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
             if(exercise != null)
             {
-                var attachment = exercise.Attachements;
+                var attachments = new List<AttachmentDTO>();
+                foreach(var a in exercise.Attachments)
+                {
+                    attachments.Add(new AttachmentDTO() { Name = a.Name, Path = a.Path });
+                }
 
-                if (attachment == null)
+                if (attachments == null)
                 {
                     return NotFound();
                 }
 
-                return attachment;
+                return attachments;
             }
             else { return NotFound(); }
         }
@@ -240,20 +239,20 @@ namespace HomeworkTrackerApi.Controllers
         [HttpDelete("{id}/attachments/{fileId}")]
         public async Task<IActionResult> DeleteAttachment(Guid id, Guid fileId)
         {
-            var attachment = await _context.Attachement.FindAsync(fileId);
+            var attachment = await _context.Attachments.FindAsync(fileId);
             if (attachment == null)
             {
                 return NotFound();
             }
 
-            _context.Attachement.Remove(attachment);
+            _context.Attachments.Remove(attachment);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
         [HttpPut("{id}/attachments/{fileId}")]
-        public async Task<IActionResult> UpdateAttachment(Guid id, Guid fileId, Attachement attachment)
+        public async Task<IActionResult> UpdateAttachment(Guid id, Guid fileId, ExerciseAttachment attachment)
         {
             if (id != attachment.Exercise.Id || fileId != attachment.Id)
             {
