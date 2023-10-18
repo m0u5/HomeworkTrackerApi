@@ -9,9 +9,9 @@ namespace HomeworkTrackerApi.Models
         [Key]
         
         public Guid Id { get; set; } 
-//ВОЗМОЖНО СТОИТ СДЕЛАТЬ ДТО И ДЛЯ ЭТОЙ МОДЕЛИ, НО Я НЕ ЗНАЮ КАК ПРИВЯЗЫВАТЬ К ЗАДАНИЯМ
+
         public string? TextAnswer { get; set; }
-        public List<AnswerAttachment>? Attachments { get; set; }//возможно в этом нет необходимости
+        public List<AnswerAttachment>? Attachments { get; set; }
         public Exercise Exercise { get; set; }
     }
 }

@@ -4,6 +4,9 @@ using HomeworkTracker.Models;
 using HomeworkTrackerApi.Data;
 using HomeworkTrackerApi.Models;
 using System.Text.RegularExpressions;
+using System.Linq;
+using Microsoft.AspNetCore.Authorization;
+using System.Data;
 
 namespace HomeworkTrackerApi.Controllers
 {
@@ -20,6 +23,7 @@ namespace HomeworkTrackerApi.Controllers
         }
 
         // GET: api/Exercises
+        [Authorize(Roles = "user")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Exercise>>> GetExercises()
         {
@@ -51,8 +55,18 @@ namespace HomeworkTrackerApi.Controllers
         // PUT: api/Exercises/5
         
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutExercise(Guid id, Exercise exercise)
+        public async Task<IActionResult> PutExercise(Guid id, [FromForm] ExerciseDTO exerciseDTO)
         {
+            Exercise exercise = new Exercise()
+            {
+                Id = id,
+                Name = exerciseDTO.Name,
+                Description = exerciseDTO.Description,
+                DeadLine = exerciseDTO.DeadLine,
+                StudentLogin = exerciseDTO.StudentLogin,
+                IsCompleted = exerciseDTO.IsCompleted
+
+            };
             if (id != exercise.Id)
             {
                 return BadRequest();
@@ -202,7 +216,7 @@ namespace HomeworkTrackerApi.Controllers
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetAttachment", new { id = exercise.Id }, attachments); 
+            return CreatedAtAction("GetAttachment", new { id = exercise.Id }, attachments);
             //return Ok();
 
         }
@@ -213,18 +227,15 @@ namespace HomeworkTrackerApi.Controllers
 
 
         //GET: api/ExerciseId/attachement
+        
         [HttpGet("{id}/attachments")]
         public async Task<ActionResult<IEnumerable<AttachmentDTO>>> GetAttachment(Guid id)//А в каком виде его на фронту то возвращать? 
             {                                                                                         //UPD ТЕПЕРЬ ВОЗВРАЩАЕТСЯ DTO ВМЕСТО ПОЛНОЙ МОДЕЛИ                                                                                                  
             var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
             if(exercise != null)
             {
-                var attachments = new List<AttachmentDTO>();
-                foreach(var a in exercise.Attachments)
-                {
-                    attachments.Add(new AttachmentDTO() { Name = a.Name, Path = a.Path });
-                }
-
+                var attachments = (from a in exercise.Attachments
+                                   select new AttachmentDTO() { Name = a.Name, Path = a.Path }).ToList();
                 if (attachments == null)
                 {
                     return NotFound();
@@ -252,7 +263,8 @@ namespace HomeworkTrackerApi.Controllers
         }
 
         [HttpPut("{id}/attachments/{fileId}")]
-        public async Task<IActionResult> UpdateAttachment(Guid id, Guid fileId, ExerciseAttachment attachment)
+        public async Task<IActionResult> UpdateAttachment(Guid id, Guid fileId, ExerciseAttachment attachment)//Переделать ток хз как
+
         {
             if (id != attachment.Exercise.Id || fileId != attachment.Id)
             {
