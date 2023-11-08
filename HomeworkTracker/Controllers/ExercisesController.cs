@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using System.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace HomeworkTrackerApi.Controllers
 {
@@ -16,25 +18,74 @@ namespace HomeworkTrackerApi.Controllers
     {
         private readonly ApiContext _context;
         private readonly IWebHostEnvironment _environment;
-        public ExercisesController(ApiContext context, IWebHostEnvironment environment)
+        private readonly UserManager<ApplicationUser> _userManager;
+        
+        public ExercisesController(ApiContext context, IWebHostEnvironment environment, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _environment = environment;
+            _userManager = userManager;
+
         }
 
         // GET: api/Exercises
-        [Authorize(Roles = "user")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Exercise>>> GetExercises()
         {
-          if (_context.Exercise == null)
-          {
-              return NotFound();
-          }
-            return await _context.Exercise.Include(e => e.Attachments).ToListAsync();
+            if (_context.Exercise == null)
+            {
+                return NotFound();
+            }
+            var user = await _userManager.GetUserAsync(User);
+            
+            if(await _userManager.IsInRoleAsync(user,"user"))
+            {
+                var userName = _userManager.GetUserName(User);
+                if (userName == null)
+                {
+                    await Console.Out.WriteLineAsync(userName);
+                    return NotFound("Not authorized");
+
+                }
+                var exercises = await _context.Exercise.Where(e => e.StudentLogin == userName).ToListAsync();
+                return exercises;
+
+            }
+            if (await _userManager.IsInRoleAsync(user, "teacher"))
+            {
+                var userId = _userManager.GetUserId(User);
+                var exercises = await _context.Exercise.Where(e => e.CreatorsId == userId).ToListAsync();
+                return exercises;
+            }
+
+            if (await _userManager.IsInRoleAsync(user, "admin"))
+                return await _context.Exercise.Include(e => e.Attachments).ToListAsync();
+            else
+                return BadRequest("Not authorized");
         }
 
+
+        //[HttpGet("MyExercises")]
+        ////[Authorize(Roles ="user")]
+        //public async Task<ActionResult<IEnumerable<Exercise>>> GetMyExercises()
+        //{
+        //    if (_context.Exercise == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    var userName = _userManager.GetUserName(User);
+        //    if(userName == null)
+        //    {
+        //        await Console.Out.WriteLineAsync(userName); 
+        //        return NotFound("Not authorized");
+                
+        //    }
+        //    var exercises = await _context.Exercise.Where(e => e.StudentLogin ==  userName).ToListAsync();
+        //    return exercises;
+            
+        //}
         // GET: api/Exercises/5
+
         [HttpGet("{id}")]
         public async Task<ActionResult<Exercise>> GetExercise(Guid id)
         {
@@ -53,7 +104,7 @@ namespace HomeworkTrackerApi.Controllers
         }
 
         // PUT: api/Exercises/5
-        
+        [Authorize(Roles = "admin, teacher")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutExercise(Guid id, [FromForm] ExerciseDTO exerciseDTO)
         {
@@ -94,10 +145,16 @@ namespace HomeworkTrackerApi.Controllers
         }
 
         // POST: api/Exercises
-        
+        [Authorize(Roles ="admin, teacher")]
         [HttpPost]
         public async Task<ActionResult<Exercise>> PostExercise([FromForm]ExerciseDTO exerciseDTO )
         {
+            var student =  await _userManager.FindByNameAsync(exerciseDTO.StudentLogin);
+            if(student == null)
+            {
+                return BadRequest("No such user");
+            }
+            
             Exercise exercise = new Exercise
             {
                 Id = new Guid(),
@@ -106,7 +163,7 @@ namespace HomeworkTrackerApi.Controllers
                 DeadLine = exerciseDTO.DeadLine,
                 StudentLogin = exerciseDTO.StudentLogin,
                 IsCompleted = exerciseDTO.IsCompleted,
-                
+                CreatorsId = _userManager.GetUserId(User)
             };
 
             if (_context.Exercise == null)
@@ -124,6 +181,7 @@ namespace HomeworkTrackerApi.Controllers
         // DELETE: api/Exercises/5
         //Возможно реализовать удаление всех файлов из папки, а не только из бд 
         //UPD: Сделал, хз надо ли
+        [Authorize(Roles = "admin, teacher")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteExercise(Guid id)
         {
@@ -158,6 +216,7 @@ namespace HomeworkTrackerApi.Controllers
 
 
 
+        [Authorize(Roles = "admin, teacher")]
         [HttpPost("{id}/attachements")]
         public async Task<ActionResult<IEnumerable<ExerciseAttachment>>> PostAttachment(Guid id, List<IFormFile> files)//ЗДЕСЬ ВОЗМОЖНО СТОИТ ЗАМЕНИТЬ EA НА EADTO
                                                                                                                        //ЧТОБЫ CREATEDATACTION НОРМАЛЬНО РАБОТАЛ   
@@ -230,7 +289,7 @@ namespace HomeworkTrackerApi.Controllers
         
         [HttpGet("{id}/attachments")]
         public async Task<ActionResult<IEnumerable<AttachmentDTO>>> GetAttachment(Guid id)//А в каком виде его на фронту то возвращать? 
-            {                                                                                         //UPD ТЕПЕРЬ ВОЗВРАЩАЕТСЯ DTO ВМЕСТО ПОЛНОЙ МОДЕЛИ                                                                                                  
+            {                                                                                                                                                                                       
             var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
             if(exercise != null)
             {
@@ -245,6 +304,63 @@ namespace HomeworkTrackerApi.Controllers
             }
             else { return NotFound(); }
         }
+
+        [HttpGet("DownloadFile/{id}")]//надо сделать так чтоб пдф скачивался а не открывался (это видимо на фронте делается)
+        public  async Task<IActionResult> DownloadFile(Guid id)
+        {
+            var attachment = await _context.Attachments.FindAsync(id);
+           
+            if (attachment == null)
+            {
+                return NotFound();
+            }
+
+            var path = attachment.Path;
+
+            var provider = new FileExtensionContentTypeProvider();
+            if(!provider.TryGetContentType(path, out var contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+
+            return PhysicalFile(path, contentType);
+            
+
+            
+        }
+
+
+        //[HttpGet("{id}/DownloadFile/{fileId}")]
+        //public async Task<IActionResult> DownloadFile(Guid id, Guid fileId)
+        //{
+        //    var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
+        //    if (exercise == null)
+        //        return NotFound();
+
+        //    var attachment = exercise.Attachments.Find(a => a.Id == fileId);
+
+        //    if (attachment == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    var path = attachment.Path;
+
+        //    var provider = new FileExtensionContentTypeProvider();
+        //    if (!provider.TryGetContentType(path, out var contentType))
+        //    {
+        //        contentType = "application/octet-stream";
+        //    }
+        //    Console.WriteLine("Файл отправился" + contentType);
+        //    await Console.Out.WriteLineAsync("Файл отправился" + contentType);
+        //    return File(path, contentType);
+
+        //}
+
+
+
+
+
 
 
         [HttpDelete("{id}/attachments/{fileId}")]
@@ -276,9 +392,17 @@ namespace HomeworkTrackerApi.Controllers
 
             return NoContent();
         }
+
+
+        
+
+
+
         private bool ExerciseExists(Guid id)
         {
             return (_context.Exercise?.Any(e => e.Id == id)).GetValueOrDefault();
         }
+
+
     }
 }
