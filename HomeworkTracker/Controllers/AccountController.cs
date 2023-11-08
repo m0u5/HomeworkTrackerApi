@@ -41,7 +41,7 @@ namespace HomeworkTrackerApi.Controllers
 
             if (result.Succeeded)
             {
-                // Здесь мы добавили выбор роли.
+                // Выбор роли при регистрации
                 var roleResult = await _userManager.AddToRoleAsync(user, roleName);
 
                 if (!roleResult.Succeeded)
@@ -88,7 +88,12 @@ namespace HomeworkTrackerApi.Controllers
             return Unauthorized();
         }
 
-
+        [HttpPost("Logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return Ok();
+        }
 
         [Authorize(Roles = "admin")]
         [HttpPost("AssignRole")]
@@ -150,7 +155,7 @@ namespace HomeworkTrackerApi.Controllers
             }
         }
 
-
+        
 
         [Authorize(Roles = "admin")]
         [HttpGet]
@@ -171,7 +176,7 @@ namespace HomeworkTrackerApi.Controllers
 
             return Ok(users);
         }
-
+        
 
     }
 }
