@@ -29,7 +29,7 @@ namespace HomeworkTrackerApi.Controllers
             {
                 return NotFound();
             }
-            return await _context.Answer.Include(a => a.Exercise).Include(a=>a.Attachments).ToListAsync();
+            return await _context.Answer.Include(a => a.Exercise).Include(a=>a.AttachedFiles).ToListAsync();
         }
 
         //GET: api/Answers/5
@@ -40,7 +40,7 @@ namespace HomeworkTrackerApi.Controllers
             {
                 return NotFound();
             }
-            var answer = await _context.Answer.Include(a => a.Exercise).Include(a => a.Attachments).FirstOrDefaultAsync(a=>a.Id == id);
+            var answer = await _context.Answer.Include(a => a.Exercise).Include(a => a.AttachedFiles).FirstOrDefaultAsync(a=>a.Id == id);
             if(answer == null)
             {
                 return NotFound(answer);
@@ -125,18 +125,19 @@ namespace HomeworkTrackerApi.Controllers
                     using var stream = new FileStream(fullFilePath, FileMode.Create);
                     await file.CopyToAsync(stream);
 
-                    var attachment = new AnswerAttachment
+                    var attachment = new AttachedFile
                     {
                         Id = Guid.NewGuid(),
                         Name = fileName,
                         Path = fullFilePath,
-                        Answer = answer,
+                        //AttachableType = answer.GetType().ToString(),//мб не заработает
+                        AttachableId = answer.Id
                     };
-                    _context.AnswerAttachments.Add(attachment);
+                    _context.AttachedFiles.Add(attachment);
                 }
             }
 
-            if (answer.Attachments != null || answer.TextAnswer != null)
+            if (answer.AttachedFiles != null || answer.TextAnswer != null)
             {
                 _context.Answer.Add(answer);
                 await _context.SaveChangesAsync();
@@ -155,19 +156,19 @@ namespace HomeworkTrackerApi.Controllers
                 return NotFound();
             }
 
-            var answer = await _context.Answer.Include(a => a.Attachments).FirstOrDefaultAsync(a => a.Id == id);
+            var answer = await _context.Answer.Include(a => a.AttachedFiles).FirstOrDefaultAsync(a => a.Id == id);
 
             if(answer == null)
             {
                 return NotFound();
             }
 
-            if(answer.Attachments !=null)
+            if(answer.AttachedFiles != null)
             {
-                foreach(var attachment in  answer.Attachments)
+                foreach(var attachment in  answer.AttachedFiles)
                 {
                     System.IO.File.Delete(attachment.Path);
-                    _context.AnswerAttachments.Remove(attachment);
+                    _context.AttachedFiles.Remove(attachment);
                 }
             }
 

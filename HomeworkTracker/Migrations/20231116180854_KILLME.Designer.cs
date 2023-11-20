@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HomeworkTrackerApi.Migrations
 {
     [DbContext(typeof(ApiContext))]
-    [Migration("20231018202830_ReworkedRoles")]
-    partial class ReworkedRoles
+    [Migration("20231116180854_KILLME")]
+    partial class KILLME
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -33,6 +33,10 @@ namespace HomeworkTrackerApi.Migrations
 
                     b.Property<string>("ApplicationUserId")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CreatorsId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DeadLine")
                         .IsRequired()
@@ -69,7 +73,7 @@ namespace HomeworkTrackerApi.Migrations
                     b.Property<string>("ApplicationUserId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<Guid>("ExerciseId")
+                    b.Property<Guid?>("ExerciseId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("TextAnswer")
@@ -82,30 +86,6 @@ namespace HomeworkTrackerApi.Migrations
                     b.HasIndex("ExerciseId");
 
                     b.ToTable("Answer");
-                });
-
-            modelBuilder.Entity("HomeworkTrackerApi.Models.AnswerAttachment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("AnswerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Path")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AnswerId");
-
-                    b.ToTable("AnswerAttachments");
                 });
 
             modelBuilder.Entity("HomeworkTrackerApi.Models.ApplicationUser", b =>
@@ -179,13 +159,19 @@ namespace HomeworkTrackerApi.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("HomeworkTrackerApi.Models.ExerciseAttachment", b =>
+            modelBuilder.Entity("HomeworkTrackerApi.Models.AttachedFile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("ExerciseId")
+                    b.Property<Guid?>("AnswerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AttachableId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ExerciseId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
@@ -198,9 +184,11 @@ namespace HomeworkTrackerApi.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AnswerId");
+
                     b.HasIndex("ExerciseId");
 
-                    b.ToTable("Attachments");
+                    b.ToTable("AttachedFiles");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -355,33 +343,22 @@ namespace HomeworkTrackerApi.Migrations
 
                     b.HasOne("HomeworkTracker.Models.Exercise", "Exercise")
                         .WithMany("Answers")
-                        .HasForeignKey("ExerciseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ExerciseId");
 
                     b.Navigation("Exercise");
                 });
 
-            modelBuilder.Entity("HomeworkTrackerApi.Models.AnswerAttachment", b =>
+            modelBuilder.Entity("HomeworkTrackerApi.Models.AttachedFile", b =>
                 {
-                    b.HasOne("HomeworkTrackerApi.Models.Answer", "Answer")
-                        .WithMany("Attachments")
+                    b.HasOne("HomeworkTrackerApi.Models.Answer", null)
+                        .WithMany("AttachedFiles")
                         .HasForeignKey("AnswerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
-                    b.Navigation("Answer");
-                });
-
-            modelBuilder.Entity("HomeworkTrackerApi.Models.ExerciseAttachment", b =>
-                {
-                    b.HasOne("HomeworkTracker.Models.Exercise", "Exercise")
-                        .WithMany("Attachments")
+                    b.HasOne("HomeworkTracker.Models.Exercise", null)
+                        .WithMany("AttachedFiles")
                         .HasForeignKey("ExerciseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Exercise");
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -439,12 +416,12 @@ namespace HomeworkTrackerApi.Migrations
                 {
                     b.Navigation("Answers");
 
-                    b.Navigation("Attachments");
+                    b.Navigation("AttachedFiles");
                 });
 
             modelBuilder.Entity("HomeworkTrackerApi.Models.Answer", b =>
                 {
-                    b.Navigation("Attachments");
+                    b.Navigation("AttachedFiles");
                 });
 
             modelBuilder.Entity("HomeworkTrackerApi.Models.ApplicationUser", b =>

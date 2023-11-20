@@ -6,23 +6,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace HomeworkTrackerApi.Migrations
 {
     /// <inheritdoc />
-    public partial class AddedUsersWithRoles : Migration
+    public partial class ReworkedAttachments : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "ApplicationUserId",
-                table: "Exercise",
-                type: "nvarchar(450)",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "ApplicationUserId",
-                table: "Answer",
-                type: "nvarchar(450)",
-                nullable: true);
-
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -44,7 +32,6 @@ namespace HomeworkTrackerApi.Migrations
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     LastName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Role = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -171,15 +158,89 @@ namespace HomeworkTrackerApi.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Exercise_ApplicationUserId",
-                table: "Exercise",
-                column: "ApplicationUserId");
+            migrationBuilder.CreateTable(
+                name: "Exercise",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DeadLine = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    StudentLogin = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatorsId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsCompleted = table.Column<bool>(type: "bit", nullable: false),
+                    ApplicationUserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Exercise", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Exercise_AspNetUsers_ApplicationUserId",
+                        column: x => x.ApplicationUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Answer",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TextAnswer = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ExerciseId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ApplicationUserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Answer", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Answer_AspNetUsers_ApplicationUserId",
+                        column: x => x.ApplicationUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Answer_Exercise_ExerciseId",
+                        column: x => x.ExerciseId,
+                        principalTable: "Exercise",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AttachedFiles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Path = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AttachableId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    AttachableType = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AttachedFiles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AttachedFiles_Answer_AttachableId",
+                        column: x => x.AttachableId,
+                        principalTable: "Answer",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AttachedFiles_Exercise_AttachableId",
+                        column: x => x.AttachableId,
+                        principalTable: "Exercise",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Answer_ApplicationUserId",
                 table: "Answer",
                 column: "ApplicationUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Answer_ExerciseId",
+                table: "Answer",
+                column: "ExerciseId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -220,32 +281,20 @@ namespace HomeworkTrackerApi.Migrations
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Answer_AspNetUsers_ApplicationUserId",
-                table: "Answer",
-                column: "ApplicationUserId",
-                principalTable: "AspNetUsers",
-                principalColumn: "Id");
+            migrationBuilder.CreateIndex(
+                name: "IX_AttachedFiles_AttachableId",
+                table: "AttachedFiles",
+                column: "AttachableId");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Exercise_AspNetUsers_ApplicationUserId",
+            migrationBuilder.CreateIndex(
+                name: "IX_Exercise_ApplicationUserId",
                 table: "Exercise",
-                column: "ApplicationUserId",
-                principalTable: "AspNetUsers",
-                principalColumn: "Id");
+                column: "ApplicationUserId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Answer_AspNetUsers_ApplicationUserId",
-                table: "Answer");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Exercise_AspNetUsers_ApplicationUserId",
-                table: "Exercise");
-
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -262,26 +311,19 @@ namespace HomeworkTrackerApi.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "AttachedFiles");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "Answer");
+
+            migrationBuilder.DropTable(
+                name: "Exercise");
+
+            migrationBuilder.DropTable(
                 name: "AspNetUsers");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Exercise_ApplicationUserId",
-                table: "Exercise");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Answer_ApplicationUserId",
-                table: "Answer");
-
-            migrationBuilder.DropColumn(
-                name: "ApplicationUserId",
-                table: "Exercise");
-
-            migrationBuilder.DropColumn(
-                name: "ApplicationUserId",
-                table: "Answer");
         }
     }
 }

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HomeworkTracker.Models
 {
-    public class Exercise
+    public class Exercise:IAttachable
     {
         [Key]
         
@@ -26,6 +26,7 @@ namespace HomeworkTracker.Models
         public List<Answer>? Answers { get; set; }
 
         //Ссылка на прикрепленные файлы
-        public List<ExerciseAttachment>? Attachments { get; set;}
+        public List<AttachedFile>? AttachedFiles { get; set; }
+
     }
 }

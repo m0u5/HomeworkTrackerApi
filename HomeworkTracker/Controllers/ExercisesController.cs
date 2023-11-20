@@ -59,7 +59,7 @@ namespace HomeworkTrackerApi.Controllers
             }
 
             if (await _userManager.IsInRoleAsync(user, "admin"))
-                return await _context.Exercise.Include(e => e.Attachments).ToListAsync();
+                return await _context.Exercise.Include(e => e.AttachedFiles).ToListAsync();
             else
                 return BadRequest("Not authorized");
         }
@@ -93,7 +93,7 @@ namespace HomeworkTrackerApi.Controllers
           {
               return NotFound();
           }
-            var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
+            var exercise = await _context.Exercise.Include(e => e.AttachedFiles).FirstOrDefaultAsync(e => e.Id == id);
 
             if (exercise == null)
             {
@@ -190,18 +190,18 @@ namespace HomeworkTrackerApi.Controllers
                 return NotFound();
             }
 
-            var exercise = await _context.Exercise.Include(e=>e.Attachments).FirstOrDefaultAsync(e => e.Id == id);//ЕСЛИ ЧТО метод FindAsync не поддерживает операцию Include
+            var exercise = await _context.Exercise.Include(e=>e.AttachedFiles).FirstOrDefaultAsync(e => e.Id == id);//ЕСЛИ ЧТО метод FindAsync не поддерживает операцию Include
 
             if (exercise == null)
             {
                 return NotFound();
             }
 
-            if(exercise.Attachments != null)
-            foreach(var attachement in exercise.Attachments)
+            if(exercise.AttachedFiles != null)
+            foreach(var attachement in exercise.AttachedFiles)
             {
                 System.IO.File.Delete(attachement.Path);//удаление файлов из папки серва
-                _context.Attachments.Remove(attachement);
+                _context.AttachedFiles.Remove(attachement);
             }
 
             _context.Exercise.Remove(exercise);
@@ -210,134 +210,100 @@ namespace HomeworkTrackerApi.Controllers
             return NoContent();
         }
 
-
-
-
-
-
-
-        [Authorize(Roles = "admin, teacher")]
-        [HttpPost("{id}/attachements")]
-        public async Task<ActionResult<IEnumerable<ExerciseAttachment>>> PostAttachment(Guid id, List<IFormFile> files)//ЗДЕСЬ ВОЗМОЖНО СТОИТ ЗАМЕНИТЬ EA НА EADTO
-                                                                                                                       //ЧТОБЫ CREATEDATACTION НОРМАЛЬНО РАБОТАЛ   
-        {
-            var exercise = await _context.Exercise.FindAsync(id);
-            if (exercise == null)
-            {
-                return NotFound();
-            }
-
-            var folderPath = Path.Combine(_environment.WebRootPath, "Files");
-
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
-            }
-
-            var attachments = new List<ExerciseAttachment>();
-            foreach (var file in files)
-            {
-                if (file.Length > 0)
-                {
-                    var fileName = file.FileName;
-                    var fullFilePath = Path.Combine(folderPath, fileName);
-
-                    // Проверка существования файла и добавление индекса
-                    int count = 1;
-                    while (System.IO.File.Exists(fullFilePath))
-                    {
-                        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-                        var extension = Path.GetExtension(fileName);
-
-                        // Обновление fileNameWithoutExtension, удаляем предыдущий индекс
-                        var regex = new Regex(@"\(\d+\)$");
-                        fileNameWithoutExtension = regex.Replace(fileNameWithoutExtension, string.Empty);
-
-                        fileName = $"{fileNameWithoutExtension}({count++}){extension}";
-                        fullFilePath = Path.Combine(folderPath, fileName);
-                    }
-
-                    using var stream = new FileStream(fullFilePath, FileMode.Create);
-                    await file.CopyToAsync(stream);
-
-                    var attachment = new ExerciseAttachment
-                    {
-                        Id = Guid.NewGuid(),
-                        Name = fileName,
-                        Path = fullFilePath,
-                        Exercise = exercise,
-                    };
-
-                    attachments.Add(attachment);
-                    _context.Attachments.Add(attachment);
-                }
-            }
-
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetAttachment", new { id = exercise.Id }, attachments);
-            //return Ok();
-
-        }
-
-
-
-
-
-
-        //GET: api/ExerciseId/attachement
-        
-        [HttpGet("{id}/attachments")]
-        public async Task<ActionResult<IEnumerable<AttachmentDTO>>> GetAttachment(Guid id)//А в каком виде его на фронту то возвращать? 
-            {                                                                                                                                                                                       
-            var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
-            if(exercise != null)
-            {
-                var attachments = (from a in exercise.Attachments
-                                   select new AttachmentDTO() { Name = a.Name, Path = a.Path }).ToList();
-                if (attachments == null)
-                {
-                    return NotFound();
-                }
-
-                return attachments;
-            }
-            else { return NotFound(); }
-        }
-
-        [HttpGet("DownloadFile/{id}")]//надо сделать так чтоб пдф скачивался а не открывался (это видимо на фронте делается)
-        public  async Task<IActionResult> DownloadFile(Guid id)
-        {
-            var attachment = await _context.Attachments.FindAsync(id);
-           
-            if (attachment == null)
-            {
-                return NotFound();
-            }
-
-            var path = attachment.Path;
-
-            var provider = new FileExtensionContentTypeProvider();
-            if(!provider.TryGetContentType(path, out var contentType))
-            {
-                contentType = "application/octet-stream";
-            }
-
-            return PhysicalFile(path, contentType);
-            
-
-            
-        }
-
-
-        //[HttpGet("{id}/DownloadFile/{fileId}")]
-        //public async Task<IActionResult> DownloadFile(Guid id, Guid fileId)
+        //[Authorize(Roles = "admin, teacher")]
+        //[HttpPost("{id}/attachements")]
+        //public async Task<ActionResult<IEnumerable<AttachedFile>>> PostAttachment(Guid id, List<IFormFile> files)//ЗДЕСЬ ВОЗМОЖНО СТОИТ ЗАМЕНИТЬ EA НА EADTO
+        //                                                                                                         //ЧТОБЫ CREATEDATACTION НОРМАЛЬНО РАБОТАЛ   
         //{
-        //    var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
+        //    var exercise = await _context.Exercise.FindAsync(id);
         //    if (exercise == null)
+        //    {
         //        return NotFound();
+        //    }
 
-        //    var attachment = exercise.Attachments.Find(a => a.Id == fileId);
+        //    var folderPath = Path.Combine(_environment.WebRootPath, "Files");
+
+        //    if (!Directory.Exists(folderPath))
+        //    {
+        //        Directory.CreateDirectory(folderPath);
+        //    }
+
+        //    var attachments = new List<AttachedFile>();
+        //    foreach (var file in files)
+        //    {
+        //        if (file.Length > 0)
+        //        {
+        //            var fileName = file.FileName;
+        //            var fullFilePath = Path.Combine(folderPath, fileName);
+
+        //            // Проверка существования файла и добавление индекса
+        //            int count = 1;
+        //            while (System.IO.File.Exists(fullFilePath))
+        //            {
+        //                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+        //                var extension = Path.GetExtension(fileName);
+
+        //                // Обновление fileNameWithoutExtension, удаляем предыдущий индекс
+        //                var regex = new Regex(@"\(\d+\)$");
+        //                fileNameWithoutExtension = regex.Replace(fileNameWithoutExtension, string.Empty);
+
+        //                fileName = $"{fileNameWithoutExtension}({count++}){extension}";
+        //                fullFilePath = Path.Combine(folderPath, fileName);
+        //            }
+
+        //            using var stream = new FileStream(fullFilePath, FileMode.Create);
+        //            await file.CopyToAsync(stream);
+
+        //            var attachment = new AttachedFile
+        //            {
+        //                Id = Guid.NewGuid(),
+        //                Name = fileName,
+        //                Path = fullFilePath,
+        //                Attachable = exercise,
+        //                AttachableId = exercise.Id
+        //            };
+
+        //            attachments.Add(attachment);
+        //            _context.AttachedFiles.Add(attachment);
+        //        }
+        //    }
+
+        //    await _context.SaveChangesAsync();
+
+        //    return CreatedAtAction("GetAttachment", new { id = exercise.Id }, attachments);
+        //    //return Ok();
+
+        //}
+
+
+
+
+
+
+        ////GET: api/ExerciseId/attachement
+
+        //[HttpGet("{id}/attachments")]
+        //public async Task<ActionResult<IEnumerable<AttachmentDTO>>> GetAttachment(Guid id)//А в каком виде его на фронту то возвращать? 
+        //    {                                                                                                                                                                                       
+        //    var exercise = await _context.Exercise.Include(e => e.AttachedFiles).FirstOrDefaultAsync(e => e.Id == id);
+        //    if(exercise != null)
+        //    {
+        //        var attachments = (from a in exercise.AttachedFiles  
+        //                           select new AttachmentDTO() { Name = a.Name, Path = a.Path }).ToList();
+        //        if (attachments == null)
+        //        {
+        //            return NotFound();
+        //        }
+
+        //        return attachments;
+        //    }
+        //    else { return NotFound(); }
+        //}
+
+        //[HttpGet("DownloadFile/{id}")]//надо сделать так чтоб пдф скачивался а не открывался (это видимо на фронте делается)
+        //public  async Task<IActionResult> DownloadFile(Guid id)
+        //{
+        //    var attachment = await _context.AttachedFiles.FindAsync(id);
 
         //    if (attachment == null)
         //    {
@@ -347,56 +313,80 @@ namespace HomeworkTrackerApi.Controllers
         //    var path = attachment.Path;
 
         //    var provider = new FileExtensionContentTypeProvider();
-        //    if (!provider.TryGetContentType(path, out var contentType))
+        //    if(!provider.TryGetContentType(path, out var contentType))
         //    {
         //        contentType = "application/octet-stream";
         //    }
-        //    Console.WriteLine("Файл отправился" + contentType);
-        //    await Console.Out.WriteLineAsync("Файл отправился" + contentType);
-        //    return File(path, contentType);
+
+        //    return PhysicalFile(path, contentType);
+
+
 
         //}
 
 
+        ////[HttpGet("{id}/DownloadFile/{fileId}")]
+        ////public async Task<IActionResult> DownloadFile(Guid id, Guid fileId)
+        ////{
+        ////    var exercise = await _context.Exercise.Include(e => e.Attachments).FirstOrDefaultAsync(e => e.Id == id);
+        ////    if (exercise == null)
+        ////        return NotFound();
+
+        ////    var attachment = exercise.Attachments.Find(a => a.Id == fileId);
+
+        ////    if (attachment == null)
+        ////    {
+        ////        return NotFound();
+        ////    }
+
+        ////    var path = attachment.Path;
+
+        ////    var provider = new FileExtensionContentTypeProvider();
+        ////    if (!provider.TryGetContentType(path, out var contentType))
+        ////    {
+        ////        contentType = "application/octet-stream";
+        ////    }
+        ////    Console.WriteLine("Файл отправился" + contentType);
+        ////    await Console.Out.WriteLineAsync("Файл отправился" + contentType);
+        ////    return File(path, contentType);
+
+        ////}
 
 
 
 
 
-        [HttpDelete("{id}/attachments/{fileId}")]
-        public async Task<IActionResult> DeleteAttachment(Guid id, Guid fileId)
-        {
-            var attachment = await _context.Attachments.FindAsync(fileId);
-            if (attachment == null)
-            {
-                return NotFound();
-            }
-
-            _context.Attachments.Remove(attachment);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        [HttpPut("{id}/attachments/{fileId}")]
-        public async Task<IActionResult> UpdateAttachment(Guid id, Guid fileId, ExerciseAttachment attachment)//Переделать ток хз как
-
-        {
-            if (id != attachment.Exercise.Id || fileId != attachment.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(attachment).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
 
 
-        
+        //[HttpDelete("{id}/attachments/{fileId}")]
+        //public async Task<IActionResult> DeleteAttachment(Guid id, Guid fileId)
+        //{
+        //    var attachment = await _context.AttachedFiles.FindAsync(fileId);
+        //    if (attachment == null)
+        //    {
+        //        return NotFound();
+        //    }
 
+        //    _context.AttachedFiles.Remove(attachment);
+        //    await _context.SaveChangesAsync();
 
+        //    return NoContent();
+        //}
+
+        //[HttpPut("{id}/attachments/{fileId}")]
+        //public async Task<IActionResult> UpdateAttachment(Guid id, Guid fileId, AttachedFile attachment)//Переделать ток хз как
+
+        //{
+        //    if (id != attachment.AttachableId|| fileId != attachment.Id)
+        //    {
+        //        return BadRequest();
+        //    }
+
+        //    _context.Entry(attachment).State = EntityState.Modified;
+        //    await _context.SaveChangesAsync();
+
+        //    return NoContent();
+        //}
 
         private bool ExerciseExists(Guid id)
         {

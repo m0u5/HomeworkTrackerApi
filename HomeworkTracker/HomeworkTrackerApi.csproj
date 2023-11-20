@@ -24,6 +24,7 @@
     <Folder Include="Migrations\" />
     <Folder Include="wwwroot\" />
     <Folder Include="wwwroot\Answers\" />
+    <Folder Include="wwwroot\ExerciseAttachments\" />
     <Folder Include="wwwroot\Files\" />
   </ItemGroup>
 
