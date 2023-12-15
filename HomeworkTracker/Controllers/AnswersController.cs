@@ -130,7 +130,6 @@ namespace HomeworkTrackerApi.Controllers
                         Id = Guid.NewGuid(),
                         Name = fileName,
                         Path = fullFilePath,
-                        //AttachableType = answer.GetType().ToString(),//мб не заработает
                         AttachableId = answer.Id
                     };
                     _context.AttachedFiles.Add(attachment);

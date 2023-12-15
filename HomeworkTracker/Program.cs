@@ -13,6 +13,11 @@ namespace HomeworkTracker
             var builder = WebApplication.CreateBuilder(args);
 
             builder.WebHost.UseWebRoot("./wwwroot");
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowMyClient",
+                    builder => builder.WithOrigins("http://localhost:3000/", ""));
+            });
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDefaultIdentity<ApplicationUser>(options => {
@@ -48,7 +53,7 @@ namespace HomeworkTracker
                 options.SuppressAsyncSuffixInActionNames = false;
             });
             var app = builder.Build();
-
+            app.UseCors("AllowMyClient");
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;

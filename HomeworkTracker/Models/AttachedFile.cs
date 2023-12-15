@@ -16,7 +16,6 @@ namespace HomeworkTrackerApi.Models
         public string Name { get; set; }
         public string Path { get; set; }
         public Guid? AttachableId { get; set; }
-        //[Required]
-        //public string? AttachableType { get; set; }
+        
     }
 }

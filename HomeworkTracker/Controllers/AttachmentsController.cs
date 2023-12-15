@@ -67,12 +67,14 @@ namespace HomeworkTrackerApi.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (await _userManager.IsInRoleAsync(user, "teacher") || await _userManager.IsInRoleAsync(user, "admin"))
             {
-                attachable = await _context.Exercise.Include(e => e.Answers).Include(e => e.AttachedFiles).FirstOrDefaultAsync(e=>e.Id == entityId);
+                attachable = await _context.Exercise.Include(e => e.Answers).Include(e => e.AttachedFiles)
+                                                    .FirstOrDefaultAsync(e => e.Id == entityId);
                 folderPath = Path.Combine(_environment.WebRootPath, "ExerciseAttachments");
             }
             if ((await _userManager.IsInRoleAsync(user, "user") || await _userManager.IsInRoleAsync(user, "admin")) && attachable == null)
             {
-                attachable = await _context.Answer.Include(e => e.Exercise).Include(e => e.AttachedFiles).FirstOrDefaultAsync(e => e.Id == entityId);
+                attachable = await _context.Answer.Include(e => e.Exercise).Include(e => e.AttachedFiles)
+                    .FirstOrDefaultAsync(e => e.Id == entityId);
                 folderPath = Path.Combine(_environment.WebRootPath, "AnswerAttachments");
             }
 
@@ -129,54 +131,7 @@ namespace HomeworkTrackerApi.Controllers
         }
 
 
-        //private async Task<List<AttachedFile>> ProcessFiles(IEnumerable<IFormFile> files, string folderPath, IAttachable attachable)
-        //{
-        //    var attachments = new List<AttachedFile>();
-
-        //    foreach (var file in files)
-        //    {
-        //        if (file.Length > 0)
-        //        {
-        //            var fileName = file.FileName;
-        //            var fullFilePath = Path.Combine(folderPath, fileName);
-
-        //            // Проверка существования файла и добавление индекса
-        //            int count = 1;
-        //            while (System.IO.File.Exists(fullFilePath))
-        //            {
-        //                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-        //                var extension = Path.GetExtension(fileName);
-
-        //                // Обновление fileNameWithoutExtension, удаляем предыдущий индекс
-        //                var regex = new Regex(@"\(\d+\)$");
-        //                fileNameWithoutExtension = regex.Replace(fileNameWithoutExtension, string.Empty);
-
-        //                fileName = $"{fileNameWithoutExtension}({count++}){extension}";
-        //                fullFilePath = Path.Combine(folderPath, fileName);
-        //            }
-
-        //            using var stream = new FileStream(fullFilePath, FileMode.Create);
-        //            await file.CopyToAsync(stream);
-
-        //            var attachment = new AttachedFile
-        //            {
-        //                Id = Guid.NewGuid(),
-        //                Name = fileName,
-        //                Path = fullFilePath,
-        //                AttachableType = attachable.GetType().ToString(),
-        //                AttachableId = attachable.Id
-        //            };
-
-        //            attachments.Add(attachment);
-        //            _context.AttachedFiles.Add(attachment);
-        //        }
-        //    }
-
-        //    return attachments;
-        //}
-
-
-
+      
 
 
 
@@ -205,7 +160,7 @@ namespace HomeworkTrackerApi.Controllers
 
 
         [Authorize(Roles = "teacher, user, admin")]
-        [HttpGet("{entityId}/attachments/{attachmentId}")]
+        [HttpPost("{entityId}/attachments/{attachmentId}")]
         public async Task<IActionResult> DeleteAttachment(Guid entityId, Guid attachmentId)
         {
             var user = await _userManager.GetUserAsync(User);
